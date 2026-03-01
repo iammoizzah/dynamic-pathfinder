@@ -1,12 +1,4 @@
-"""
-AI Dynamic Pathfinding Agent with A* and Greedy Best-First Search
-Implements dynamic obstacle spawning and real-time replanning
 
-Requirements: pygame
-Install: pip install pygame
-
-Run: python dynamic_pathfinder.py
-"""
 
 import pygame
 import heapq
@@ -15,9 +7,6 @@ import random
 import math
 from collections import deque
 
-# ══════════════════════════════════════════════════════════════════════════════
-#  CONSTANTS & COLORS
-# ══════════════════════════════════════════════════════════════════════════════
 # Colors
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
@@ -30,16 +19,13 @@ YELLOW = (241, 196, 15)      # Frontier
 PURPLE = (155, 89, 182)      # Agent
 ORANGE = (230, 126, 34)      # Path
 OBSTACLE = (44, 62, 80)      # Obstacles
+LIGHT_GRAY = (240, 240, 240)
 
 # Default settings
 DEFAULT_ROWS = 20
 DEFAULT_COLS = 30
 CELL_SIZE = 30
 FPS = 60
-
-# ══════════════════════════════════════════════════════════════════════════════
-#  GRID ENVIRONMENT
-# ══════════════════════════════════════════════════════════════════════════════
 
 
 class GridEnvironment:
@@ -97,10 +83,6 @@ class GridEnvironment:
                     if random.random() < density:
                         self.grid[r][c] = 1
 
-# ══════════════════════════════════════════════════════════════════════════════
-#  HEURISTIC FUNCTIONS
-# ══════════════════════════════════════════════════════════════════════════════
-
 
 def manhattan_distance(pos1, pos2):
     """Manhattan distance: |x1-x2| + |y1-y2|"""
@@ -110,10 +92,6 @@ def manhattan_distance(pos1, pos2):
 def euclidean_distance(pos1, pos2):
     """Euclidean distance: sqrt((x1-x2)² + (y1-y2)²)"""
     return math.sqrt((pos1[0] - pos2[0])**2 + (pos1[1] - pos2[1])**2)
-
-# ══════════════════════════════════════════════════════════════════════════════
-#  SEARCH ALGORITHMS
-# ══════════════════════════════════════════════════════════════════════════════
 
 
 class SearchAlgorithm:
@@ -143,13 +121,10 @@ class SearchAlgorithm:
         """
         A* Search Algorithm
         f(n) = g(n) + h(n)
-        g(n) = cost from start to n
-        h(n) = heuristic estimate from n to goal
         """
         start_time = time.time()
         self.nodes_visited = 0
 
-        # Priority queue: (f_score, counter, node)
         counter = 0
         open_set = [(0, counter, start)]
         came_from = {}
@@ -169,14 +144,12 @@ class SearchAlgorithm:
             frontier.discard(current)
             self.nodes_visited += 1
 
-            # Goal found
             if current == goal:
                 self.execution_time = (time.time() - start_time) * 1000
                 path = self.reconstruct_path(came_from, current)
                 self.path_cost = g_score[current]
                 return path, visited, frontier
 
-            # Explore neighbors
             for neighbor in self.env.get_neighbors(current):
                 if neighbor in visited:
                     continue
@@ -202,12 +175,10 @@ class SearchAlgorithm:
         """
         Greedy Best-First Search
         f(n) = h(n) only
-        Expands node that appears closest to goal
         """
         start_time = time.time()
         self.nodes_visited = 0
 
-        # Priority queue: (h_score, counter, node)
         counter = 0
         open_set = [(self.heuristic(start, goal), counter, start)]
         came_from = {}
@@ -225,17 +196,14 @@ class SearchAlgorithm:
             frontier.discard(current)
             self.nodes_visited += 1
 
-            # Goal found
             if current == goal:
                 self.execution_time = (time.time() - start_time) * 1000
                 path = self.reconstruct_path(came_from, current)
-                # Calculate actual path cost
                 self.path_cost = 0
                 for i in range(len(path) - 1):
                     self.path_cost += self.get_path_cost(path[i], path[i+1])
                 return path, visited, frontier
 
-            # Explore neighbors
             for neighbor in self.env.get_neighbors(current):
                 if neighbor in visited:
                     continue
@@ -249,10 +217,6 @@ class SearchAlgorithm:
 
         self.execution_time = (time.time() - start_time) * 1000
         return None, visited, frontier
-
-# ══════════════════════════════════════════════════════════════════════════════
-#  GUI BUTTON CLASS
-# ══════════════════════════════════════════════════════════════════════════════
 
 
 class Button:
@@ -276,10 +240,6 @@ class Button:
     def is_clicked(self, pos):
         return self.rect.collidepoint(pos)
 
-# ══════════════════════════════════════════════════════════════════════════════
-#  MAIN APPLICATION
-# ══════════════════════════════════════════════════════════════════════════════
-
 
 class PathfindingApp:
     def __init__(self):
@@ -290,12 +250,12 @@ class PathfindingApp:
         self.cols = DEFAULT_COLS
         self.cell_size = CELL_SIZE
 
-        # Window setup
-        self.panel_width = 300
+        # Window setup - INCREASED HEIGHT FOR BETTER VISIBILITY
+        self.panel_width = 320
         self.grid_width = self.cols * self.cell_size
         self.grid_height = self.rows * self.cell_size
         self.width = self.grid_width + self.panel_width
-        self.height = self.grid_height
+        self.height = max(self.grid_height, 750)  # Ensure minimum height
 
         self.screen = pygame.display.set_mode((self.width, self.height))
         pygame.display.set_caption(
@@ -313,9 +273,9 @@ class PathfindingApp:
         self.env.goal = (self.rows // 2, self.cols - 2)
 
         # State
-        self.drawing_mode = "obstacle"  # obstacle, start, goal, erase
-        self.algorithm = "A*"  # A* or GBFS
-        self.heuristic = "Manhattan"  # Manhattan or Euclidean
+        self.drawing_mode = "obstacle"
+        self.algorithm = "A*"
+        self.heuristic = "Manhattan"
         self.dynamic_mode = False
         self.dynamic_probability = 0.02
 
@@ -331,7 +291,7 @@ class PathfindingApp:
         self.current_path = None
         self.path_index = 0
         self.last_move_time = 0
-        self.move_delay = 200  # milliseconds
+        self.move_delay = 200
 
         # Metrics
         self.metrics = {
@@ -344,16 +304,16 @@ class PathfindingApp:
         self.setup_buttons()
 
     def setup_buttons(self):
-        """Setup all UI buttons"""
-        x = self.grid_width + 20
+        """Setup all UI buttons with proper spacing"""
+        x = self.grid_width + 10
         y = 20
-        w = 260
+        w = 300
         h = 35
-        gap = 10
+        gap = 8
 
         self.buttons = []
 
-        # Drawing modes
+        # Section: Drawing Modes
         self.buttons.append(Button(x, y, w, h, "Draw Obstacles", OBSTACLE))
         y += h + gap
         self.buttons.append(Button(x, y, w, h, "Set Start", BLUE))
@@ -363,22 +323,20 @@ class PathfindingApp:
         self.buttons.append(Button(x, y, w, h, "Erase", WHITE, BLACK))
         y += h + gap * 2
 
-        # Algorithms
+        # Section: Algorithm & Heuristic
         self.buttons.append(Button(x, y, w, h, "Algorithm: A*", PURPLE))
         y += h + gap
-
-        # Heuristics
         self.buttons.append(Button(x, y, w, h, "Heuristic: Manhattan", ORANGE))
         y += h + gap * 2
 
-        # Actions
+        # Section: Map Actions
         self.buttons.append(
             Button(x, y, w, h, "Generate Random Maze", DARK_GRAY))
         y += h + gap
         self.buttons.append(Button(x, y, w, h, "Clear Obstacles", DARK_GRAY))
         y += h + gap * 2
 
-        # Start/Stop
+        # Section: Search Control
         self.buttons.append(Button(x, y, w, h, "▶ Start Search", GREEN))
         y += h + gap
         self.buttons.append(Button(x, y, w, h, "⏹ Stop", RED))
@@ -386,17 +344,16 @@ class PathfindingApp:
         self.buttons.append(Button(x, y, w, h, "Reset View", DARK_GRAY))
         y += h + gap * 2
 
-        # Dynamic mode
+        # Section: Dynamic Mode (WITH PROPER SPACING)
         self.buttons.append(Button(x, y, w, h, "Dynamic Mode: OFF", ORANGE))
 
         # Update active states
-        self.buttons[0].active = True  # Draw obstacles
+        self.buttons[0].active = True
 
     def handle_button_click(self, pos):
         """Handle button clicks"""
         for i, button in enumerate(self.buttons):
             if button.is_clicked(pos):
-                # Drawing modes (0-3)
                 if i == 0:
                     self.drawing_mode = "obstacle"
                     self.set_active_button(0, 0, 4)
@@ -409,38 +366,22 @@ class PathfindingApp:
                 elif i == 3:
                     self.drawing_mode = "erase"
                     self.set_active_button(3, 0, 4)
-
-                # Algorithm (4)
                 elif i == 4:
                     self.algorithm = "GBFS" if self.algorithm == "A*" else "A*"
                     self.buttons[4].text = f"Algorithm: {self.algorithm}"
-
-                # Heuristic (5)
                 elif i == 5:
                     self.heuristic = "Euclidean" if self.heuristic == "Manhattan" else "Manhattan"
                     self.buttons[5].text = f"Heuristic: {self.heuristic}"
-
-                # Generate maze (6)
                 elif i == 6:
                     self.generate_random_maze()
-
-                # Clear obstacles (7)
                 elif i == 7:
                     self.clear_obstacles()
-
-                # Start search (8)
                 elif i == 8:
                     self.start_search()
-
-                # Stop (9)
                 elif i == 9:
                     self.stop_animation()
-
-                # Reset view (10)
                 elif i == 10:
                     self.reset_view()
-
-                # Dynamic mode (11)
                 elif i == 11:
                     self.dynamic_mode = not self.dynamic_mode
                     self.buttons[11].text = f"Dynamic Mode: {'ON' if self.dynamic_mode else 'OFF'}"
@@ -507,6 +448,7 @@ class PathfindingApp:
     def start_search(self):
         """Start pathfinding search"""
         if not self.env.start or not self.env.goal:
+            print("Please set both Start and Goal positions!")
             return
 
         if self.animation_running:
@@ -514,13 +456,9 @@ class PathfindingApp:
 
         self.reset_view()
 
-        # Get heuristic function
         heuristic_func = manhattan_distance if self.heuristic == "Manhattan" else euclidean_distance
-
-        # Create searcher
         searcher = SearchAlgorithm(self.env, heuristic_func)
 
-        # Run search
         if self.algorithm == "A*":
             result = searcher.a_star(self.env.start, self.env.goal)
         else:
@@ -532,17 +470,14 @@ class PathfindingApp:
             print("No path found!")
             return
 
-        # Update visualization
         self.visualization_state['visited'] = visited
         self.visualization_state['frontier'] = frontier
         self.visualization_state['path'] = path
 
-        # Update metrics
         self.metrics['nodes_visited'] = searcher.nodes_visited
         self.metrics['path_cost'] = searcher.path_cost
         self.metrics['execution_time'] = searcher.execution_time
 
-        # Start animation if dynamic mode
         if self.dynamic_mode:
             self.animation_running = True
             self.current_path = path
@@ -566,22 +501,19 @@ class PathfindingApp:
 
         self.last_move_time = current_time
 
-        # Move agent
         if self.path_index >= len(self.current_path):
             self.animation_running = False
+            print("Goal reached!")
             return
 
         self.agent_position = self.current_path[self.path_index]
 
-        # Spawn dynamic obstacles
         if random.random() < self.dynamic_probability:
             self.spawn_dynamic_obstacle()
 
-        # Check if next position is blocked
         if self.path_index + 1 < len(self.current_path):
             next_pos = self.current_path[self.path_index + 1]
             if self.env.grid[next_pos[0]][next_pos[1]] == 1:
-                # Replan!
                 self.replan_from_current()
                 return
 
@@ -600,10 +532,12 @@ class PathfindingApp:
                     pos not in self.current_path[max(0, self.path_index-1):self.path_index+3]):
 
                 self.env.set_cell(pos, 1)
+                print(f"Dynamic obstacle spawned at {pos}")
                 break
 
     def replan_from_current(self):
         """Replan path from current position"""
+        print("Path blocked! Replanning...")
         heuristic_func = manhattan_distance if self.heuristic == "Manhattan" else euclidean_distance
         searcher = SearchAlgorithm(self.env, heuristic_func)
 
@@ -616,22 +550,20 @@ class PathfindingApp:
         path, visited, frontier = result
 
         if path is None:
-            print("Cannot replan - path blocked!")
+            print("Cannot find alternative path!")
             self.animation_running = False
             return
 
-        # Update visualization
         self.visualization_state['visited'].update(visited)
         self.visualization_state['frontier'] = frontier
         self.visualization_state['path'] = path
 
-        # Update metrics
         self.metrics['nodes_visited'] += searcher.nodes_visited
         self.metrics['path_cost'] = searcher.path_cost
 
-        # Update path
         self.current_path = path
         self.path_index = 0
+        print("New path found!")
 
     def draw_grid(self):
         """Draw the grid"""
@@ -641,7 +573,6 @@ class PathfindingApp:
                 y = r * self.cell_size
                 pos = (r, c)
 
-                # Determine color
                 if pos == self.env.start:
                     color = BLUE
                 elif pos == self.env.goal:
@@ -667,18 +598,22 @@ class PathfindingApp:
     def draw_panel(self):
         """Draw control panel"""
         x = self.grid_width
-        pygame.draw.rect(self.screen, WHITE,
+        pygame.draw.rect(self.screen, LIGHT_GRAY,
                          (x, 0, self.panel_width, self.height))
 
-        # Draw buttons
+        # Draw all buttons
         for button in self.buttons:
             button.draw(self.screen, self.font_small)
 
-        # Draw metrics
-        y = self.height - 150
-        x_offset = self.grid_width + 20
+        # Draw metrics at bottom
+        y = self.height - 140
+        x_offset = self.grid_width + 10
 
-        pygame.draw.rect(self.screen, GRAY, (x_offset, y, 260, 120))
+        # Metrics background
+        pygame.draw.rect(self.screen, WHITE, (x_offset,
+                         y, 300, 120), border_radius=5)
+        pygame.draw.rect(self.screen, BLACK, (x_offset,
+                         y, 300, 120), 2, border_radius=5)
         y += 10
 
         title = self.font_medium.render("Real-Time Metrics", True, BLACK)
@@ -711,7 +646,7 @@ class PathfindingApp:
                     running = False
 
                 elif event.type == pygame.MOUSEBUTTONDOWN:
-                    if event.button == 1:  # Left click
+                    if event.button == 1:
                         self.is_dragging = True
                         self.handle_button_click(event.pos)
                         self.handle_grid_click(event.pos)
@@ -724,10 +659,8 @@ class PathfindingApp:
                     if self.is_dragging:
                         self.handle_grid_click(event.pos)
 
-            # Update animation
             self.update_animation()
 
-            # Draw everything
             self.screen.fill(BLACK)
             self.draw_grid()
             self.draw_panel()
@@ -737,9 +670,6 @@ class PathfindingApp:
         pygame.quit()
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-#  MAIN
-# ══════════════════════════════════════════════════════════════════════════════
 if __name__ == "__main__":
     app = PathfindingApp()
     app.run()
